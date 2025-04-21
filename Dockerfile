@@ -1,18 +1,27 @@
-# Use OpenJDK 17 as base image
-FROM openjdk:17-jdk-slim
+# ---------- Stage 1: Build ----------
+FROM maven:3.8.7-openjdk-17 AS build
 
-# Add a label (optional)
-LABEL maintainer="yourname@example.com"
-
-# Set the working directory
+# Set working directory inside container
 WORKDIR /app
 
-# Copy the jar file into the container
-COPY target/order-service-0.0.1-SNAPSHOT.jar app.jar
+# Copy all files
+COPY . .
 
-# Expose the port your app runs on
+# Build the application
+RUN mvn clean package -DskipTests
+
+# ---------- Stage 2: Run ----------
+FROM openjdk:17-jdk-slim
+
+# Set working directory for runtime
+WORKDIR /app
+
+# Copy built JAR from the build stage
+COPY --from=build /app/target/order-service-0.0.1-SNAPSHOT.jar app.jar
+
+# Expose the port
 EXPOSE 9090
 
-# Run the jar file
+# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
